@@ -33,3 +33,4 @@ from .schedulers import (
     GaudiEulerDiscreteScheduler,
     GaudiFlowMatchEulerDiscreteScheduler,
 )
+from .pipelines.wan.pipeline_wan import GaudiWanPipeline
