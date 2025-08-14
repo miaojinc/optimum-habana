@@ -33,4 +33,5 @@ from .schedulers import (
     GaudiEulerDiscreteScheduler,
     GaudiFlowMatchEulerDiscreteScheduler,
 )
+from .pipelines.qwenimage.pipeline_qwenimage import GaudiQwenImagePipeline
 from .pipelines.wan.pipeline_wan import GaudiWanPipeline
