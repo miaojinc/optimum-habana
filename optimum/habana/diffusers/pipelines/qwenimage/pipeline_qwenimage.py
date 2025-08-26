@@ -111,11 +111,11 @@ class GaudiQwenImagePipeline(GaudiDiffusionPipeline, QwenImagePipeline):
         for block in self.transformer.transformer_blocks:
             block.attn.processor = GaudiQwenDoubleStreamAttnProcessor2_0(is_training)
 
-        if use_hpu_graphs:
-            from habana_frameworks.torch.hpu import wrap_in_hpu_graph
-            #transformer = wrap_in_hpu_graph(transformer)
-            for block in self.transformer.transformer_blocks:
-                block = wrap_in_hpu_graph(block)
+        # if use_hpu_graphs:
+        #     from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+        #     #transformer = wrap_in_hpu_graph(transformer)
+        #     for block in self.transformer.transformer_blocks:
+        #         block = wrap_in_hpu_graph(block)
             
 
     @torch.no_grad()
@@ -281,7 +281,6 @@ class GaudiQwenImagePipeline(GaudiDiffusionPipeline, QwenImagePipeline):
                 max_sequence_length=max_sequence_length,
             )
 
-
         hb_profiler = HabanaProfile(
             warmup=profiling_warmup_steps,
             active=profiling_steps,
@@ -299,10 +298,11 @@ class GaudiQwenImagePipeline(GaudiDiffusionPipeline, QwenImagePipeline):
             height,
             width,
             prompt_embeds.dtype,
-            device,
+            torch.device('cpu'), 
             generator,
             latents,
         )
+        latents=latents.to(device)
         img_shapes = [(1, height // self.vae_scale_factor // 2, width // self.vae_scale_factor // 2)] * batch_size
 
         # 5. Prepare timesteps
@@ -338,8 +338,8 @@ class GaudiQwenImagePipeline(GaudiDiffusionPipeline, QwenImagePipeline):
         txt_seq_lens = prompt_embeds_mask.sum(dim=1).tolist() if prompt_embeds_mask is not None else None
         negative_txt_seq_lens = (
             negative_prompt_embeds_mask.sum(dim=1).tolist() if negative_prompt_embeds_mask is not None else None
-        )
-
+        )   
+                 
         # 6. Denoising loop
         self.scheduler.set_begin_index(0)
         with self.progress_bar(total=num_inference_steps) as progress_bar:
