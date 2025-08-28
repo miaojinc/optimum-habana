@@ -292,7 +292,7 @@ class GaudiQwenImagePipeline(GaudiDiffusionPipeline, QwenImagePipeline):
         
         # 4. Prepare latent variables
         num_channels_latents = self.transformer.config.in_channels // 4
-        latents, latent_image_ids = self.prepare_latents(
+        latents = self.prepare_latents(
             batch_size * num_images_per_prompt,
             num_channels_latents,
             height,
