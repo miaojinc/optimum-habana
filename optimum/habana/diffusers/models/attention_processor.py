@@ -27,7 +27,7 @@ from torch import nn
 from .embeddings import apply_rotary_emb
 from diffusers.models.transformers.transformer_wan import WanAttention, _get_qkv_projections, _get_added_kv_projections
 #from diffusers.models.transformers.transformer_qwenimage import apply_rotary_emb_qwen
-from .qwenimage_transformer import apply_rotary_emb_qwen_real
+from .qwenimage_transformer import apply_rotary_emb_qwen
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -682,14 +682,10 @@ class GaudiQwenDoubleStreamAttnProcessor2_0:
         # Apply RoPE
         if image_rotary_emb is not None:
             img_freqs, txt_freqs = image_rotary_emb
-            img_query = apply_rotary_emb_qwen_real(img_query, img_freqs)
-            img_key = apply_rotary_emb_qwen_real(img_key, img_freqs)
-            txt_query = apply_rotary_emb_qwen_real(txt_query, txt_freqs)
-            txt_key = apply_rotary_emb_qwen_real(txt_key, txt_freqs)
-            # img_query = apply_rotary_emb_qwen(img_query, img_freqs, use_real=False)
-            # img_key = apply_rotary_emb_qwen(img_key, img_freqs, use_real=False)
-            # txt_query = apply_rotary_emb_qwen(txt_query, txt_freqs, use_real=False)
-            # txt_key = apply_rotary_emb_qwen(txt_key, txt_freqs, use_real=False)
+            img_query = apply_rotary_emb_qwen(img_query, img_freqs)
+            img_key = apply_rotary_emb_qwen(img_key, img_freqs)
+            txt_query = apply_rotary_emb_qwen(txt_query, txt_freqs)
+            txt_key = apply_rotary_emb_qwen(txt_key, txt_freqs)
                         
         # Concatenate for joint attention
         # Order: [text, image]
