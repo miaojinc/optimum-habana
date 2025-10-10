@@ -15,10 +15,96 @@
 
 import habana_frameworks.torch.core as htcore
 import torch
+import torch.nn.functional as F
 
 
 CACHE_T = 2
 
+def WanAvgDown3DForwardGaudi(self, x: torch.Tensor) -> torch.Tensor:
+    pad_t = (self.factor_t - x.shape[2] % self.factor_t) % self.factor_t
+    pad = (0, 0, 0, 0, pad_t, 0)
+    x = F.pad(x, pad)
+    B, C, T, H, W = x.shape
+    x = x.view(
+        B,
+        C,
+        T // self.factor_t,
+        self.factor_t,
+        H // self.factor_s,
+        self.factor_s,
+        W // self.factor_s,
+        self.factor_s,
+    )
+    #x = x.permute(0, 1, 3, 5, 7, 2, 4, 6).contiguous()
+    x = x.transpose(6, 7).contiguous()
+    htcore.mark_step()
+    x = x.permute(0, 1, 3, 5, 6, 2, 4, 7).contiguous()
+
+    x = x.view(
+        B,
+        C * self.factor,
+        T // self.factor_t,
+        H // self.factor_s,
+        W // self.factor_s,
+    )
+    x = x.view(
+        B,
+        self.out_channels,
+        self.group_size,
+        T // self.factor_t,
+        H // self.factor_s,
+        W // self.factor_s,
+    )
+    x = x.mean(dim=2)
+    return x
+
+def WanDupUp3DForwardGaudi(self, x: torch.Tensor, first_chunk=False) -> torch.Tensor:
+    x = x.repeat_interleave(self.repeats, dim=1)
+    x = x.view(
+        x.size(0),
+        self.out_channels,
+        self.factor_t,
+        self.factor_s,
+        self.factor_s,
+        x.size(2),
+        x.size(3),
+        x.size(4),
+    )
+    print("WanDupUp3D input shape: ", x.shape)
+    print("WanDupUp3D first_chunk: ", first_chunk)
+    #x = x.permute(0, 1, 5, 2, 6, 3, 7, 4).contiguous()
+
+    x = x.transpose(2, 5).contiguous()
+    htcore.mark_step()
+    ##x = x.permute(0, 1, 2, 5, 6, 3, 7, 4).contiguous()
+    #x = x.transpose(6, 7).contiguous()
+    #htcore.mark_step()
+    #x = x.permute(0, 1, 2, 5, 7, 3, 6, 4).contiguous()
+
+    x = x.permute(0, 1, 2, 5, 6, 3, 4, 7).contiguous()
+    htcore.mark_step()
+    x = x.transpose(6, 7).contiguous()
+
+    #x = x.transpose(2, 3)
+    #x = x.transpose(2, 5)
+    #x = x.transpose(4, 6)
+    #x = x.transpose(6, 7)
+    #x = x.contiguous()
+    htcore.mark_step()
+    x = x.view(
+        x.size(0),
+        self.out_channels,
+        x.size(2) * self.factor_t,
+        x.size(4) * self.factor_s,
+        x.size(6) * self.factor_s,
+    )
+    x = x.contiguous()
+    print("WanDupUp3D output shape: ", x.shape)
+    print("WanDupUp3D factor_t: ", self.factor_t)
+    if first_chunk:
+        x = x[:, :, self.factor_t - 1 :, :, :]
+        x = x.contiguous()
+    return x
 
 def WanDecoder3dForwardGaudi(self, x, feat_cache=None, feat_idx=[0], first_chunk=False):
     r"""
